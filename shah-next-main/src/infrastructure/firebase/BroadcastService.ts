@@ -15,7 +15,7 @@ import type { IBroadcastService } from '../../domain/repositories/interfaces';
 import type { Broadcast, Message } from '../../domain/entities';
 
 export class FirebaseBroadcastService implements IBroadcastService {
-  private generateInviteCode(length: number = 8): string {
+  private generateInviteCode(length: number = 6): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
     for (let i = 0; i < length; i++) {
@@ -88,7 +88,14 @@ export class FirebaseBroadcastService implements IBroadcastService {
   }
 
   async joinChannel(channelId: string, uid: string): Promise<void> {
-    await set(ref(db, `broadcasts/${channelId}/members/${uid}`), {
+    const memberRef = ref(db, `broadcasts/${channelId}/members/${uid}`);
+    const memberSnap = await get(memberRef);
+    if (memberSnap.exists()) {
+      await set(ref(db, `userBroadcasts/${uid}/${channelId}`), true);
+      return;
+    }
+
+    await set(memberRef, {
       role: 'member',
       joinedAt: serverTimestamp()
     });

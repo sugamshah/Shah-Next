@@ -208,6 +208,8 @@ export default function PrivateChatPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const visibleMessages = messages.filter((m) => !m.deletedFor?.[user?.uid || '']);
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#0c0c0c]">
@@ -300,8 +302,8 @@ export default function PrivateChatPage() {
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col scroll-smooth custom-scrollbar bg-[#0c0c0c]">
-        {messages.length > 0 ? (
-          messages.filter(m => !m.deletedFor?.[user?.uid || '']).map((msg) => {
+        {visibleMessages.length > 0 ? (
+          visibleMessages.map((msg) => {
             const isOwn = msg.sender === user?.uid;
             const reactionEntries = msg.reactions ? Object.entries(msg.reactions) : [];
             

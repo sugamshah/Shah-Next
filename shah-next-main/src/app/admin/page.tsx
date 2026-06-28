@@ -33,7 +33,7 @@ export default function AdminDashboard() {
     if (loading) return;
 
     if (!user) {
-      router.push('/login');
+      router.push('/admin/login');
       return;
     }
 

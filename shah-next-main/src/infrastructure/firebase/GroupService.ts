@@ -54,7 +54,14 @@ export class FirebaseGroupService implements IGroupService {
   }
 
   async joinGroup(groupId: string, uid: string): Promise<void> {
-    await set(ref(db, `groups/${groupId}/members/${uid}`), true);
+    const memberRef = ref(db, `groups/${groupId}/members/${uid}`);
+    const memberSnap = await get(memberRef);
+    if (memberSnap.exists()) {
+      await set(ref(db, `userGroups/${uid}/${groupId}`), true);
+      return;
+    }
+
+    await set(memberRef, true);
     await set(ref(db, `userGroups/${uid}/${groupId}`), true);
   }
 
