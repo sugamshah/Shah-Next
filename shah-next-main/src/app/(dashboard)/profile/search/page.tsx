@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { services } from '@/services/container';
 import { Search, ArrowRight, User as UserIcon, Globe, IdCard } from 'lucide-react';
 import Image from 'next/image';
-import { User } from '@/domain/entities';
+import type { User } from '@/domain/entities';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 

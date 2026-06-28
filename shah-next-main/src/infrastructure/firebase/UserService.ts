@@ -10,8 +10,8 @@ import {
   push
 } from 'firebase/database';
 import { db } from './config';
-import { IUserService } from '../../domain/repositories/interfaces';
-import { User } from '../../domain/entities';
+import type { IUserService } from '../../domain/repositories/interfaces';
+import type { User } from '../../domain/entities';
 
 export class FirebaseUserService implements IUserService {
   async getUserProfile(uid: string): Promise<User | null> {
@@ -21,6 +21,18 @@ export class FirebaseUserService implements IUserService {
       return { ...data, uid: data.uid || uid };
     }
     return null;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    const snap = await get(ref(db, 'users'));
+    if (!snap.exists()) {
+      return [];
+    }
+
+    return Object.entries(snap.val() as Record<string, User>).map(([uid, data]) => ({
+      ...data,
+      uid: data.uid || uid,
+    }));
   }
 
   async saveUserProfile(user: User): Promise<void> {

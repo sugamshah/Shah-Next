@@ -1,4 +1,4 @@
-import { IUploadService } from '../../domain/repositories/interfaces';
+import type { IUploadService } from '../../domain/repositories/interfaces';
 
 export class CloudinaryUploadService implements IUploadService {
   private cloudName = "dz0uzidoi";

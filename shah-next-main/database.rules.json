@@ -1,12 +1,14 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
     "users": {
       ".indexOn": ["jgId", "handle"],
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid == $uid && !newData.hasChild('admin')",
+        ".write": "auth != null && (auth.uid == $uid || root.child('admins').child(auth.uid).child('verified').val() === true)",
         "admin": {
-          ".read": "auth != null",
+          ".read": "auth != null && root.child('admins').child(auth.uid).child('verified').val() === true",
           ".write": false
         },
         "blocked": {
@@ -16,6 +18,9 @@
         "contacts": {
           ".read": "auth != null && auth.uid == $uid",
           ".write": "auth != null && auth.uid == $uid"
+        },
+        "ban": {
+          ".write": "auth != null && root.child('admins').child(auth.uid).child('verified').val() === true"
         }
       }
     },
@@ -26,9 +31,6 @@
         "verified": {
           ".read": true,
           ".write": false
-        },
-        "twoFactorEnabled": {
-          ".write": "auth.uid == $uid"
         }
       }
     },
@@ -49,7 +51,7 @@
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && (auth.uid == $uid || root.child('admins').child(auth.uid).child('verified').val() === true)",
         "$notifId": {
-           ".validate": "newData.hasChildren(['type', 'title', 'message', 'timestamp']) && newData.child('timestamp').val() <= now"
+          ".validate": "newData.hasChildren(['type', 'title', 'message', 'timestamp']) && newData.child('timestamp').val() <= now"
         }
       }
     },
@@ -57,7 +59,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         "$senderUid": {
-          ".write": "auth != null && auth.uid != $uid && !root.child('users').child($uid).child('blocked').child($senderUid).exists() && !root.child('users').child($senderUid).child('blocked').child($uid).exists()"
+          ".write": "auth != null && auth.uid != $uid && auth.uid == $senderUid && !root.child('users').child($uid).child('blocked').child($senderUid).exists() && !root.child('users').child($senderUid).child('blocked').child($uid).exists()"
         }
       }
     },
@@ -66,20 +68,20 @@
         ".read": "auth != null && $roomId.contains(auth.uid)",
         ".write": "auth != null && $roomId.contains(auth.uid)",
         "messages": {
-          ".indexOn": "timestamp",
+          ".indexOn": ["timestamp"],
           "$messageId": {
-            ".write": "auth != null && auth.uid == newData.child('sender').val() && !root.child('users').child($roomId.split('_')[0]).child('blocked').child($roomId.split('_')[1]).exists() && !root.child('users').child($roomId.split('_')[1]).child('blocked').child($roomId.split('_')[0]).exists()"
+            ".write": "auth != null && auth.uid == newData.child('sender').val() && $roomId.contains(auth.uid)"
           }
         }
       }
     },
     "chat-list": {
-       "$uid": {
-          ".read": "auth != null && auth.uid == $uid",
-          "$friendUid": {
-             ".write": "auth != null && (auth.uid == $uid || auth.uid == $friendUid)"
-          }
-       }
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$friendUid": {
+          ".write": "auth != null && (auth.uid == $uid || auth.uid == $friendUid)"
+        }
+      }
     },
     "groups": {
       "$groupId": {
@@ -89,9 +91,9 @@
           ".write": "auth != null && data.child('admins').child(auth.uid).exists()"
         },
         "members": {
-           "$memberUid": {
-              ".write": "auth != null && (root.child('groups').child($groupId).child('admins').child(auth.uid).exists() || (auth.uid == $memberUid && newData.numChildren() == 1))"
-           }
+          "$memberUid": {
+            ".write": "auth != null && (root.child('groups').child($groupId).child('admins').child(auth.uid).exists() || (auth.uid == $memberUid && newData.numChildren() == 1))"
+          }
         }
       }
     },
@@ -99,23 +101,20 @@
       "$groupId": {
         ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
         ".write": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists() && auth.uid == newData.child('sender').val()",
-        ".indexOn": "timestamp"
+        ".indexOn": ["timestamp"]
       }
     },
     "broadcasts": {
       "$channelId": {
         ".read": "auth != null && data.child('members').child(auth.uid).exists()",
         ".write": "auth != null && (!data.exists() || data.child('admins').child(auth.uid).exists())",
-        "inviteCode": {
-          ".read": "auth != null && (data.parent().child('members').child(auth.uid).exists() || data.parent().child('admins').child(auth.uid).exists())"
-        },
         "admins": {
           ".write": "auth != null && data.child('admins').child(auth.uid).exists()"
         },
         "members": {
-           "$memberUid": {
-              ".write": "auth != null && (root.child('broadcasts').child($channelId).child('admins').child(auth.uid).exists() || (auth.uid == $memberUid && newData.numChildren() == 1))"
-           }
+          "$memberUid": {
+            ".write": "auth != null && (root.child('broadcasts').child($channelId).child('admins').child(auth.uid).exists() || (auth.uid == $memberUid && newData.numChildren() == 1))"
+          }
         }
       }
     },
@@ -123,28 +122,34 @@
       "$channelId": {
         ".read": "auth != null && root.child('broadcasts').child($channelId).child('members').child(auth.uid).exists()",
         ".write": "auth != null && root.child('broadcasts').child($channelId).child('members').child(auth.uid).exists() && auth.uid == newData.child('sender').val()",
-        ".indexOn": "timestamp"
+        ".indexOn": ["timestamp"]
       }
     },
     "reports": {
       ".read": "auth != null && root.child('admins').child(auth.uid).child('verified').val() === true",
-      ".write": "auth != null && (root.child('admins').child(auth.uid).child('verified').val() === true || auth.uid == newData.child('reporterId').val())",
+      ".write": "auth != null && (root.child('admins').child(auth.uid).child('verified').val() === true || auth.uid == newData.child('reporterUid').val())",
       "$reportId": {
-        "reporterId": {
+        "reporterUid": {
           ".validate": "newData.val() === auth.uid"
         },
-        "type": {
-          ".validate": "newData.val() === 'spam' || newData.val() === 'harassment' || newData.val() === 'inappropriate' || newData.val() === 'other'"
+        "reportType": {
+          ".validate": "newData.val() === 'user_harassment' || newData.val() === 'user_spam' || newData.val() === 'user_inappropriate' || newData.val() === 'other'"
         },
         "verdict": {
           ".write": "root.child('admins').child(auth.uid).child('verified').val() === true"
         }
       }
     },
+    "appeals": {
+      "$appealId": {
+        ".read": "auth != null && (auth.uid == data.child('userId').val() || root.child('admins').child(auth.uid).child('verified').val() === true)",
+        ".write": "auth != null && (!data.exists() || auth.uid == data.child('userId').val() || root.child('admins').child(auth.uid).child('verified').val() === true)"
+      }
+    },
     "banned": {
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || root.child('admins').child(auth.uid).child('verified').val() === true)",
-        ".write": "root.child('admins').child(auth.uid).child('verified').val() === true"
+        ".write": "auth != null && root.child('admins').child(auth.uid).child('verified').val() === true"
       }
     },
     "adminLogs": {

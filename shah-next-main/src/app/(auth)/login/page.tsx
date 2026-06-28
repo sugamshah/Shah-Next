@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -22,6 +24,7 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       await services.auth.signIn(email, password);
@@ -39,10 +42,35 @@ export default function LoginPage() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await services.auth.resetPassword(email);
+      setSuccess('A password reset link has been sent to your email.');
+      setMode('login');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0c0c0c] text-[#e0e0e0] p-4">
       <div className="w-full max-w-md p-8 rounded-2xl bg-[#0a0a0a] border border-[#1f1f1f] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <header className="text-3xl font-bold mb-8 text-center">Welcome Back</header>
+        <header className="text-3xl font-bold mb-8 text-center">
+          {mode === 'login' ? 'Welcome Back' : 'Reset Password'}
+        </header>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl mb-6 text-sm text-center">
@@ -50,44 +78,84 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-1">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl border border-[#1f1f1f] bg-[#111111] text-[#e0e0e0] outline-none transition-all focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/20"
-              placeholder="Email"
-              required
-            />
+        {success && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-3 rounded-xl mb-6 text-sm text-center">
+            {success}
           </div>
+        )}
 
-          <div className="space-y-1">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3.5 rounded-xl border border-[#1f1f1f] bg-[#111111] text-[#e0e0e0] outline-none transition-all focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/20"
-              placeholder="Password"
-              required
-            />
-          </div>
+        {mode === 'login' ? (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border border-[#1f1f1f] bg-[#111111] text-[#e0e0e0] outline-none transition-all focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/20"
+                placeholder="Email"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 mt-4 bg-[#6366f1] hover:bg-[#4f46e5] text-white font-semibold rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-[#6366f1]/20"
-          >
-            {loading ? 'Authenticating...' : 'Login'}
-          </button>
-        </form>
+            <div className="space-y-1">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border border-[#1f1f1f] bg-[#111111] text-[#e0e0e0] outline-none transition-all focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/20"
+                placeholder="Password"
+                required
+              />
+            </div>
 
-        <p className="mt-6 text-center text-sm opacity-90">
-          Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-[#a5b4fc] hover:underline font-semibold">
-            Register
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 mt-4 bg-[#6366f1] hover:bg-[#4f46e5] text-white font-semibold rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-[#6366f1]/20"
+            >
+              {loading ? 'Authenticating...' : 'Login'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-1">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border border-[#1f1f1f] bg-[#111111] text-[#e0e0e0] outline-none transition-all focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/20"
+                placeholder="Email"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 mt-4 bg-[#6366f1] hover:bg-[#4f46e5] text-white font-semibold rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-[#6366f1]/20"
+            >
+              {loading ? 'Sending...' : 'Send reset link'}
+            </button>
+          </form>
+        )}
+
+        <div className="mt-6 flex flex-col items-center gap-2 text-sm">
+          {mode === 'login' ? (
+            <button type="button" onClick={() => setMode('forgot')} className="text-[#a5b4fc] hover:underline font-semibold">
+              Forgot password?
+            </button>
+          ) : (
+            <button type="button" onClick={() => setMode('login')} className="text-[#a5b4fc] hover:underline font-semibold">
+              Back to login
+            </button>
+          )}
+          <p className="opacity-90">
+            Don&apos;t have an account?{' '}
+            <Link href="/register" className="text-[#a5b4fc] hover:underline font-semibold">
+              Register
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

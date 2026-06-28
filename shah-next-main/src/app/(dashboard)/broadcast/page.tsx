@@ -7,7 +7,7 @@ import { services } from '@/services/container';
 import { useRouter } from 'next/navigation';
 import { Radio, Search, Plus, User, ShieldCheck, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
-import { Broadcast } from '@/domain/entities';
+import type { Broadcast } from '@/domain/entities';
 
 export default function BroadcastListPage() {
   const { user, profile } = useAuth();

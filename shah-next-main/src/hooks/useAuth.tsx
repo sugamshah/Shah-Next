@@ -1,9 +1,19 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
+import type { User as FirebaseUser } from 'firebase/auth';
 import { services } from '@/services/container';
-import { User } from '@/domain/entities';
+import type { User } from '@/domain/entities';
+
+const setSessionCookie = (name: string, value: string | null, days = 1) => {
+  if (typeof document === 'undefined') return;
+  if (!value) {
+    document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
+    return;
+  }
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${value}; Path=/; Expires=${expires}; SameSite=Lax`;
+};
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -26,13 +36,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let unsubProfile: (() => void) | undefined;
+    let safetyTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const unsubscribe = services.auth.onAuthStateChanged((firebaseUser) => {
       setUser(firebaseUser);
-      
-      const safetyTimeout = setTimeout(() => {
+
+      if (safetyTimeout) {
+        clearTimeout(safetyTimeout);
+      }
+
+      safetyTimeout = setTimeout(() => {
         setLoading(false);
-      }, 5000); // 5s safety timeout
+      }, 5000);
 
       if (unsubProfile) {
         unsubProfile();
@@ -40,25 +55,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
+        setSessionCookie('shah-auth', firebaseUser.uid);
         unsubProfile = services.user.listenToUserProfile(firebaseUser.uid, (userProfile) => {
           setProfile(userProfile);
+          if (userProfile?.ban?.isBanned || userProfile?.banned) {
+            setSessionCookie('shah-banned', '1');
+          } else {
+            setSessionCookie('shah-banned', null);
+          }
           setLoading(false);
-          clearTimeout(safetyTimeout);
+          if (safetyTimeout) {
+            clearTimeout(safetyTimeout);
+          }
         });
       } else {
+        setSessionCookie('shah-auth', null);
+        setSessionCookie('shah-banned', null);
         setProfile(null);
         setLoading(false);
-        clearTimeout(safetyTimeout);
+        if (safetyTimeout) {
+          clearTimeout(safetyTimeout);
+        }
       }
     });
 
     return () => {
       unsubscribe();
       if (unsubProfile) unsubProfile();
+      if (safetyTimeout) clearTimeout(safetyTimeout);
     };
   }, []);
 
   const handleSignOut = async () => {
+    setSessionCookie('shah-auth', null);
+    setSessionCookie('shah-banned', null);
     await services.auth.signOut();
   };
 

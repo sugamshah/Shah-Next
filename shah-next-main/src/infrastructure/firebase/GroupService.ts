@@ -8,8 +8,8 @@ import {
   get 
 } from 'firebase/database';
 import { db } from './config';
-import { IGroupService } from '../../domain/repositories/interfaces';
-import { Group } from '../../domain/entities';
+import type { IGroupService } from '../../domain/repositories/interfaces';
+import type { Group } from '../../domain/entities';
 
 export class FirebaseGroupService implements IGroupService {
   async createGroup(group: Partial<Group>, creatorUid: string): Promise<string> {

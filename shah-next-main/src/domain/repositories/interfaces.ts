@@ -1,4 +1,4 @@
-import { User, Message, Group, Broadcast, Story } from '../entities';
+import type { User, Message, Group, Broadcast, Story } from '../entities';
 
 export interface IAuthService {
   onAuthStateChanged(callback: (user: any | null) => void): () => void;
@@ -6,10 +6,14 @@ export interface IAuthService {
   signUp(email: string, password: string): Promise<any>;
   signOut(): Promise<void>;
   updateProfile(name: string, photoURL: string): Promise<void>;
+  resetPassword(email: string): Promise<void>;
+  sendVerificationEmail(): Promise<void>;
+  getCurrentUser(): any;
 }
 
 export interface IUserService {
   getUserProfile(uid: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
   saveUserProfile(user: User): Promise<void>;
   updateUserProfile(uid: string, updates: Partial<User>): Promise<void>;
   findUserByJgId(jgId: string): Promise<User | null>;

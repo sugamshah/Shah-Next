@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { services } from '@/services/container';
-import emailjs from '@emailjs/browser';
 import { auth } from '@/infrastructure/firebase/config';
 
 export default function RegisterPage() {
@@ -14,10 +13,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showVerification, setShowVerification] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [enteredCode, setEnteredCode] = useState('');
-  const [tempUserData, setTempUserData] = useState<any>(null);
-  
   const router = useRouter();
 
   const generateJGId = (name: string) => {
@@ -32,8 +27,8 @@ export default function RegisterPage() {
       setError('Please fill in all fields');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must be at least 8 characters and include a number and uppercase letter');
       return;
     }
 
@@ -41,65 +36,30 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setVerificationCode(code);
-
-      // Initialize EmailJS
-      emailjs.init("sjn35QLyRf6R8DSMK");
-
-      const templateParams = {
-        name: name,
-        code: code,
-        to_email: email,
-      };
-
-      await emailjs.send("service_wrzzxpv", "template_9dn4un1", templateParams);
-      
-      setTempUserData({ name, email, password });
-      setShowVerification(true);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Failed to send verification email');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (enteredCode !== verificationCode) {
-      setError('Invalid verification code');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const userCredential = await services.auth.signUp(tempUserData.email, tempUserData.password);
+      const userCredential = await services.auth.signUp(email, password);
       const user = userCredential.user;
-      
-      const jgId = generateJGId(tempUserData.name);
-      const handle = tempUserData.name.replace(/\s/g, "").toLowerCase() + Math.floor(100 + Math.random() * 899);
-      
-      // Save profile
+
+      const jgId = generateJGId(name);
+      const handle = name.replace(/\s/g, '').toLowerCase() + Math.floor(100 + Math.random() * 899);
+
       await services.user.saveUserProfile({
         uid: user.uid,
-        name: tempUserData.name,
-        email: tempUserData.email,
+        name,
+        email,
         photoURL: '',
-        handle: handle,
-        jgId: jgId,
+        handle,
+        jgId,
         createdAt: Date.now(),
         banned: false,
         violationPoints: 0,
         reportCount: 0,
         correctReports: 0,
-        reportAccuracy: 50
+        reportAccuracy: 50,
       });
 
-      await services.auth.signOut();
-      alert(`Registration successful! Your JG ID is: ${jgId}`);
-      router.push('/login');
+      await services.auth.sendVerificationEmail();
+      setShowVerification(true);
+      setError('');
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/operation-not-allowed') {
@@ -117,7 +77,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#0c0c0c] text-[#e0e0e0] p-4">
       <div className="w-full max-w-md p-8 rounded-2xl bg-[#0a0a0a] border border-[#1f1f1f] shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
         <header className="text-3xl font-bold mb-8 text-center">
-          {showVerification ? 'Verify Email' : 'Create Account'}
+          {showVerification ? 'Check Your Inbox' : 'Create Account'}
         </header>
 
         {error && (
@@ -163,22 +123,13 @@ export default function RegisterPage() {
         ) : (
           <div className="space-y-6 text-center">
             <p className="text-sm opacity-80">
-              We sent a 6-digit code to <strong>{email}</strong>
+              We sent a verification email to <strong>{email}</strong>. Please verify it before signing in.
             </p>
-            <input
-              type="text"
-              value={enteredCode}
-              onChange={(e) => setEnteredCode(e.target.value)}
-              className="w-full px-4 py-4 rounded-xl border border-[#1f1f1f] bg-[#111111] text-center text-3xl tracking-[1rem] font-bold outline-none focus:border-[#6366f1]"
-              maxLength={6}
-              placeholder="000000"
-            />
             <button
-              onClick={handleVerify}
-              disabled={loading}
+              onClick={() => router.push('/login')}
               className="w-full py-4 bg-[#5865f2] hover:bg-[#4752c4] text-white font-bold rounded-xl transition-all shadow-lg"
             >
-              {loading ? 'Verifying...' : 'Verify'}
+              Continue to login
             </button>
           </div>
         )}

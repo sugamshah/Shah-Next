@@ -6,8 +6,8 @@ import {
   onValue 
 } from 'firebase/database';
 import { db } from './config';
-import { IStoryService } from '../../domain/repositories/interfaces';
-import { Story } from '../../domain/entities';
+import type { IStoryService } from '../../domain/repositories/interfaces';
+import type { Story } from '../../domain/entities';
 
 export class FirebaseStoryService implements IStoryService {
   async uploadStory(story: Partial<Story>): Promise<void> {

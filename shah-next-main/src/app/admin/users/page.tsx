@@ -36,8 +36,31 @@ export default function AdminUsersPage() {
   }, [user, router, showError]);
 
   useEffect(() => {
-    // Fetch all users (this would need a service method to get all users)
-    setLoading(false);
+    let isMounted = true;
+
+    const loadUsers = async () => {
+      try {
+        const allUsers = await services.user.getAllUsers();
+        if (isMounted) {
+          setUsers(allUsers);
+        }
+      } catch (error) {
+        console.error('Failed to load users', error);
+        if (isMounted) {
+          setUsers([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleBanUser = async (userId: string) => {

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Message, Group, User } from '@/domain/entities';
+import type { Message, Group, User } from '@/domain/entities';
 
 export default function GroupChatPage() {
   const { user, profile } = useAuth();

@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { services } from '@/services/container';
 import { Users, Search, Plus, User } from 'lucide-react';
 import Link from 'next/link';
-import { Group } from '@/domain/entities';
+import type { Group } from '@/domain/entities';
 
 export default function GroupListPage() {
   const { user } = useAuth();

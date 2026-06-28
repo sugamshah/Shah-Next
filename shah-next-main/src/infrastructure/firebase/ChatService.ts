@@ -11,8 +11,8 @@ import {
   equalTo
 } from 'firebase/database';
 import { db } from './config';
-import { IChatService } from '../../domain/repositories/interfaces';
-import { Message } from '../../domain/entities';
+import type { IChatService } from '../../domain/repositories/interfaces';
+import type { Message } from '../../domain/entities';
 
 import { S7Security } from '../../lib/security';
 

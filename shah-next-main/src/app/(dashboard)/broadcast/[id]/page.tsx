@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Message, Broadcast } from '@/domain/entities';
+import type { Message, Broadcast } from '@/domain/entities';
 
 export default function BroadcastChatPage() {
   const { user, profile } = useAuth();

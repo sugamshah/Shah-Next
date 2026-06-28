@@ -25,7 +25,7 @@ import {
 import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Message, User } from '@/domain/entities';
+import type { Message, User } from '@/domain/entities';
 
 export default function PrivateChatPage() {
   const { user, profile } = useAuth();

@@ -25,7 +25,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { User } from '@/domain/entities';
+import type { User } from '@/domain/entities';
 
 export default function PublicProfilePage() {
   const { user, profile: myProfile } = useAuth();

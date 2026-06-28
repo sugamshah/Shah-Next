@@ -8,7 +8,7 @@ import { MessageSquare, Search, ArrowLeft, Plus, Camera, X, Eye, UserPlus } from
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { Contact, Story } from '@/domain/entities';
+import type { Contact, Story } from '@/domain/entities';
 
 export default function ChatListPage() {
   const { user, profile } = useAuth();

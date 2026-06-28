@@ -1,6 +1,6 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from './config';
-import { IUploadService } from '../../domain/repositories/interfaces';
+import type { IUploadService } from '../../domain/repositories/interfaces';
 
 export class FirebaseUploadService implements IUploadService {
   async uploadFile(file: File, path?: string): Promise<string> {

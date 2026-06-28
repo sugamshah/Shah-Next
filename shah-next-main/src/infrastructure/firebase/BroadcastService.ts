@@ -11,8 +11,8 @@ import {
   equalTo 
 } from 'firebase/database';
 import { db } from './config';
-import { IBroadcastService } from '../../domain/repositories/interfaces';
-import { Broadcast, Message } from '../../domain/entities';
+import type { IBroadcastService } from '../../domain/repositories/interfaces';
+import type { Broadcast, Message } from '../../domain/entities';
 
 export class FirebaseBroadcastService implements IBroadcastService {
   private generateInviteCode(length: number = 8): string {

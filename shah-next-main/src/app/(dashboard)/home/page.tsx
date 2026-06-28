@@ -7,7 +7,7 @@ import { services } from '@/services/container';
 import { Users, UserPlus, MessageSquare, Radio, ArrowRight, ChartLine, TrendingUp, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Group, Broadcast } from '@/domain/entities';
+import type { Group, Broadcast } from '@/domain/entities';
 import { S7Security } from '@/lib/security';
 
 export default function HomePage() {

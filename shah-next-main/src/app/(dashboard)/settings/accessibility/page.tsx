@@ -8,18 +8,15 @@ import { cn } from '@/lib/utils';
 
 export default function AccessibilityPage() {
   const router = useRouter();
-  const [scale, setScale] = useState(100);
-  const [highContrast, setHighContrast] = useState(false);
-
-  useEffect(() => {
-    const savedScale = localStorage.getItem('shah-text-scale');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (savedScale) setScale(Number(savedScale));
-    
-    const savedHC = localStorage.getItem('shah-high-contrast');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (savedHC === 'true') setHighContrast(true);
-  }, []);
+  const [scale, setScale] = useState(() => {
+    if (typeof window === 'undefined') return 100;
+    const savedScale = window.localStorage.getItem('shah-text-scale');
+    return savedScale ? Number(savedScale) : 100;
+  });
+  const [highContrast, setHighContrast] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('shah-high-contrast') === 'true';
+  });
 
   useEffect(() => {
     document.documentElement.style.fontSize = `${(scale / 100) * 16}px`;
