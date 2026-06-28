@@ -1,0 +1,6 @@
+{
+  "name": "SHAH Communication Platform",
+  "description": "A secured, professional communication platform featuring private/group chats, broadcast channels, stories, and WebRTC calling.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
