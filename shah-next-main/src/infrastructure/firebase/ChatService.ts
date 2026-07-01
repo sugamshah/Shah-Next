@@ -37,6 +37,22 @@ export class FirebaseChatService implements IChatService {
       isPrivate = false;
     }
 
+    if (isPrivate) {
+      const [u1, u2] = roomId.split('_');
+      const b1 = await get(ref(db, `users/${u1}/blocked/${u2}`));
+      const b2 = await get(ref(db, `users/${u2}/blocked/${u1}`));
+      if (b1.exists() || b2.exists()) {
+        throw new Error('S-7: Communication blocked between users.');
+      }
+
+      if (u1 && u2) {
+        await update(ref(db, `chat-members/${roomId}`), {
+          [u1]: true,
+          [u2]: true,
+        });
+      }
+    }
+
     const messagesRef = ref(db, messagesPath);
     const newMessageRef = push(messagesRef);
     const msgId = newMessageRef.key!;
@@ -191,16 +207,6 @@ export class FirebaseChatService implements IChatService {
     }
 
     if (isPrivate) {
-      const [u1, u2] = roomId.split('_');
-      const b1 = await get(ref(db, `users/${u1}/blocked/${u2}`));
-      const b2 = await get(ref(db, `users/${u2}/blocked/${u1}`));
-      if (b1.exists() || b2.exists()) {
-        // Rollback message if blocked (optional, but good for data integrity)
-        await set(newMessageRef, null);
-        throw new Error('S-7: Communication blocked between users.');
-      }
-
-      // Update chat list for both users
       const [uid1, uid2] = roomId.split('_');
       const updateChatList = async (uid: string, friendUid: string) => {
         const chatListRef = ref(db, `chat-list/${uid}/${friendUid}`);
@@ -252,7 +258,10 @@ export class FirebaseChatService implements IChatService {
       messages.sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
       callback(messages);
     }, (err) => {
-      console.error('listenMessages error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/permission|denied/i.test(message)) {
+        console.error('listenMessages error:', err);
+      }
       callback([]);
     });
   }
@@ -278,7 +287,10 @@ export class FirebaseChatService implements IChatService {
             });
           }
         }).catch(err => {
-          console.error(`Permission denied or error fetching profile for ${friendUid}`, err);
+          const message = err instanceof Error ? err.message : String(err);
+          if (!/permission|denied/i.test(message)) {
+            console.error(`Error fetching profile for ${friendUid}`, err);
+          }
           // Still add the chat item but with minimal friend info or placeholder
           chats.push({
             ...chatData,

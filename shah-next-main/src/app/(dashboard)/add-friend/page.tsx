@@ -7,8 +7,6 @@ import { services } from '@/services/container';
 import { UserPlus, IdCard, ArrowLeft, Search } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { ref, set, serverTimestamp } from 'firebase/database';
-import { db } from '@/infrastructure/firebase/config';
 
 export default function AddFriendPage() {
   const { user, profile } = useAuth();
@@ -44,15 +42,7 @@ export default function AddFriendPage() {
         return;
       }
 
-      // Send request
-      const requestRef = ref(db, `requests/${target.uid}/${user.uid}`);
-      await set(requestRef, {
-        status: 'pending',
-        senderName: profile?.name || user.displayName || 'User',
-        senderJgId: profile?.jgId || '',
-        timestamp: serverTimestamp()
-      });
-
+      await services.user.sendRequest(user.uid, target);
       setMessage({ text: 'Friend request sent successfully!', type: 'success' });
       setJgId('');
     } catch (err: any) {

@@ -37,6 +37,7 @@ export default function AdminLoginPage() {
       if (currentUser) {
         const admin = await services.admin.isAdmin(currentUser.uid);
         if (!admin) {
+          await services.auth.signOut();
           setError('User is not authorized for admin access.');
           return;
         }

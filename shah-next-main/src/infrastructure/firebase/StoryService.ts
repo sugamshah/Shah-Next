@@ -54,7 +54,10 @@ export class FirebaseStoryService implements IStoryService {
             }
           }
         } catch (err) {
-          console.error(`Permission denied or error fetching stories for ${authorUid}`, err);
+          const message = err instanceof Error ? err.message : String(err);
+          if (!/permission|denied/i.test(message)) {
+            console.error(`Error fetching stories for ${authorUid}`, err);
+          }
         }
       }
       callback(allStories);

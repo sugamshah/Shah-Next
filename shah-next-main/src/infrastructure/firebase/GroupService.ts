@@ -99,7 +99,10 @@ export class FirebaseGroupService implements IGroupService {
             }
             callback(Object.values(groupsMap));
           }, (err) => {
-            console.error(`Error listening to group ${id}:`, err);
+            const message = err instanceof Error ? err.message : String(err);
+            if (!/permission|denied/i.test(message)) {
+              console.error(`Error listening to group ${id}:`, err);
+            }
           });
         }
       });
@@ -108,7 +111,10 @@ export class FirebaseGroupService implements IGroupService {
         callback([]);
       }
     }, (err) => {
-      console.error('listenUserGroups error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/permission|denied/i.test(message)) {
+        console.error('listenUserGroups error:', err);
+      }
       callback([]);
     });
 

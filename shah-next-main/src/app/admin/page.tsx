@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { adminService } from '@/infrastructure/firebase/AdminService';
+import { services } from '@/services/container';
 import { useToast } from '@/hooks/useToast';
 import {
   LayoutDashboard,
@@ -108,8 +109,8 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-bold">Admin Panel</h1>
         </div>
         <button
-          onClick={() => {
-            localStorage.removeItem('adminAuth');
+          onClick={async () => {
+            await services.auth.signOut();
             router.push('/home');
           }}
           className="flex items-center gap-2 px-4 py-2 bg-red-950 hover:bg-red-900 text-red-200 rounded-lg transition-all"

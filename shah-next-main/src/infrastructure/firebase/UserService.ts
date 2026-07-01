@@ -59,7 +59,10 @@ export class FirebaseUserService implements IUserService {
     return onValue(userRef, (snap) => {
       callback(snap.exists() ? (snap.val() as User) : null);
     }, (err) => {
-      console.error('listenToUserProfile error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/permission|denied/i.test(message)) {
+        console.error('listenToUserProfile error:', err);
+      }
       callback(null);
     });
   }
@@ -84,16 +87,40 @@ export class FirebaseUserService implements IUserService {
   }
 
   async sendRequest(uid: string, targetUser: User): Promise<void> {
+    if (!uid || !targetUser?.uid || uid === targetUser.uid) {
+      throw new Error('Invalid friend request details.');
+    }
+
     const userRef = ref(db, `users/${uid}`);
     const userSnap = await get(userRef);
+    if (!userSnap.exists()) {
+      throw new Error('Sender profile not found.');
+    }
+
     const userData = userSnap.val() as User;
+    const targetContact = await get(ref(db, `users/${targetUser.uid}/contacts/${uid}`));
+    if (targetContact.exists()) {
+      throw new Error('You are already friends with this user.');
+    }
+
+    const blockedByTarget = await get(ref(db, `users/${targetUser.uid}/blocked/${uid}`));
+    const blockedBySender = await get(ref(db, `users/${uid}/blocked/${targetUser.uid}`));
+    if (blockedByTarget.exists() || blockedBySender.exists()) {
+      throw new Error('Unable to send request due to block settings.');
+    }
+
+    const existingRequest = await get(ref(db, `requests/${targetUser.uid}/${uid}`));
+    if (existingRequest.exists()) {
+      throw new Error('Friend request already sent.');
+    }
 
     await set(ref(db, `requests/${targetUser.uid}/${uid}`), {
-      uid: uid,
+      uid,
       senderName: userData.name,
       senderJgId: userData.jgId,
       senderPhotoURL: userData.photoURL || null,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      status: 'pending'
     });
 
     // Add notification
@@ -106,6 +133,7 @@ export class FirebaseUserService implements IUserService {
       read: false,
       link: '/requests',
       sender: {
+        uid,
         name: userData.name,
         photoURL: userData.photoURL || ''
       }

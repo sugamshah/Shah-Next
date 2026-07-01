@@ -24,10 +24,27 @@ export class FirebaseBroadcastService implements IBroadcastService {
     return result;
   }
 
+  private async createUniqueInviteCode(length = 6): Promise<string> {
+    const broadcastsRef = ref(db, 'broadcasts');
+    let attempt = 0;
+
+    while (attempt < 10) {
+      const code = this.generateInviteCode(length).toUpperCase();
+      const q = query(broadcastsRef, orderByChild('inviteCode'), equalTo(code));
+      const snap = await get(q);
+      if (!snap.exists()) {
+        return code;
+      }
+      attempt += 1;
+    }
+
+    throw new Error('Unable to generate a unique invite code. Please try again later.');
+  }
+
   async createChannel(channel: Partial<Broadcast>, creatorUid: string): Promise<string> {
     const channelRef = push(ref(db, 'broadcasts'));
     const channelId = channelRef.key!;
-    const inviteCode = this.generateInviteCode();
+    const inviteCode = await this.createUniqueInviteCode();
     
     const channelData: Broadcast = {
       ...channel as Broadcast,
@@ -52,8 +69,9 @@ export class FirebaseBroadcastService implements IBroadcastService {
   }
 
   async getChannelByInviteCode(inviteCode: string): Promise<Broadcast | null> {
+    const normalizedCode = inviteCode.trim().toUpperCase();
     const broadcastsRef = ref(db, 'broadcasts');
-    const q = query(broadcastsRef, orderByChild('inviteCode'), equalTo(inviteCode));
+    const q = query(broadcastsRef, orderByChild('inviteCode'), equalTo(normalizedCode));
     const snap = await get(q);
     
     if (snap.exists()) {
@@ -65,7 +83,7 @@ export class FirebaseBroadcastService implements IBroadcastService {
   }
 
   async regenerateInviteCode(channelId: string): Promise<string> {
-    const newCode = this.generateInviteCode();
+    const newCode = await this.createUniqueInviteCode();
     await update(ref(db, `broadcasts/${channelId}`), { inviteCode: newCode });
     return newCode;
   }
@@ -103,7 +121,7 @@ export class FirebaseBroadcastService implements IBroadcastService {
   }
 
   async joinChannelByInviteCode(inviteCode: string, uid: string): Promise<string> {
-    const channel = await this.getChannelByInviteCode(inviteCode);
+    const channel = await this.getChannelByInviteCode(inviteCode.trim().toUpperCase());
     if (!channel) throw new Error('Invalid invite code');
     
     await this.joinChannel(channel.id!, uid);
@@ -192,7 +210,10 @@ export class FirebaseBroadcastService implements IBroadcastService {
             }
             callback(Object.values(channelsMap));
           }, (err) => {
-            console.error(`Error listening to broadcast ${id}:`, err);
+            const message = err instanceof Error ? err.message : String(err);
+            if (!/permission|denied/i.test(message)) {
+              console.error(`Error listening to broadcast ${id}:`, err);
+            }
           });
         }
       });
@@ -201,7 +222,10 @@ export class FirebaseBroadcastService implements IBroadcastService {
         callback([]);
       }
     }, (err) => {
-      console.error('listenChannels error:', err);
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/permission|denied/i.test(message)) {
+        console.error('listenChannels error:', err);
+      }
       callback([]);
     });
 
